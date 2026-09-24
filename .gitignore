@@ -18,7 +18,7 @@ frontend/dist/
 backend/dhara_pulse.db
 
 # Large local dataset
-backend/gsi_clean_final.csv
+
 
 # Large local files
 backend/landslide_report.pdf

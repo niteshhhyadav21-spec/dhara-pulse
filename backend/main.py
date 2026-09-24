@@ -4,6 +4,12 @@ import requests
 import time
 from sqlalchemy import create_engine, text
 
+import csv
+import re
+from pathlib import Path
+
+
+
 weather_cache = {}
 WEATHER_CACHE_SECONDS = 300
 
@@ -33,6 +39,107 @@ with engine.begin() as connection:
         )
     """))
 
+        # GSI Historical Landslide Database
+    connection.execute(text("""
+        CREATE TABLE IF NOT EXISTS gsi_historical_landslides (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            serial_number TEXT,
+            slide_number TEXT,
+            state TEXT,
+            district TEXT,
+            slide_name TEXT,
+            nh_sh_location TEXT,
+            latitude REAL,
+            longitude REAL,
+            material TEXT,
+            movement_type TEXT,
+            history TEXT,
+            year INTEGER
+        )
+    """))
+
+    # Load GSI CSV data if the table is empty
+    gsi_count = connection.execute(
+        text("SELECT COUNT(*) FROM gsi_historical_landslides")
+    ).scalar()
+
+    if gsi_count == 0:
+        gsi_file = Path(__file__).resolve().parent / "gsi_clean_final.csv"
+
+        if gsi_file.exists():
+            gsi_records = []
+
+            with open(gsi_file, "r", encoding="utf-8-sig", newline="") as file:
+                reader = csv.DictReader(file)
+
+                for row in reader:
+                    try:
+                        latitude = float(row["latitude"])
+                        longitude = float(row["longitude"])
+                    except (ValueError, TypeError, KeyError):
+                        continue
+
+                    slide_number = (row.get("slide_number") or "").strip()
+
+                    year = None
+                    year_match = re.search(r"/(20\d{2})/", slide_number)
+
+                    if year_match:
+                        year = int(year_match.group(1))
+
+                    gsi_records.append({
+                        "serial_number": (row.get("serial_number") or "").strip(),
+                        "slide_number": slide_number,
+                        "state": (row.get("state") or "").strip(),
+                        "district": (row.get("district") or "").strip(),
+                        "slide_name": (row.get("slide_name") or "").strip(),
+                        "nh_sh_location": (row.get("nh_sh_location") or "").strip(),
+                        "latitude": latitude,
+                        "longitude": longitude,
+                        "material": (row.get("material") or "").strip(),
+                        "movement_type": (row.get("movement_type") or "").strip(),
+                        "history": (row.get("history") or "").strip(),
+                        "year": year
+                    })
+
+            if gsi_records:
+                connection.execute(
+                    text("""
+                        INSERT INTO gsi_historical_landslides (
+                            serial_number,
+                            slide_number,
+                            state,
+                            district,
+                            slide_name,
+                            nh_sh_location,
+                            latitude,
+                            longitude,
+                            material,
+                            movement_type,
+                            history,
+                            year
+                        )
+                        VALUES (
+                            :serial_number,
+                            :slide_number,
+                            :state,
+                            :district,
+                            :slide_name,
+                            :nh_sh_location,
+                            :latitude,
+                            :longitude,
+                            :material,
+                            :movement_type,
+                            :history,
+                            :year
+                        )
+                    """),
+                    gsi_records
+                )
+
+                print(f"GSI records loaded: {len(gsi_records)}")
+            else:
+                print(f"GSI CSV not found: {gsi_file}")
 
     # Citizen hazard reports
     connection.execute(text("""

@@ -3,6 +3,10 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "./App.css";
 
+const API_BASE = "https://dhara-pulse-backend.onrender.com";
+
+
+
 function getRainfallStatus(value) {
   if (value >= 50) return "Very High";
   if (value >= 20) return "High";
@@ -100,7 +104,7 @@ function App() {
 const updateReportStatus = async (reportId, newStatus) => {
   try {
     const response = await fetch(
-      `http://127.0.0.1:8000/api/reports/${reportId}/status?status=${newStatus}`,
+      `https://dhara-pulse-backend.onrender.com/api/reports/${reportId}/status?status=${newStatus}`,
       {
         method: "PATCH"
       }
@@ -116,7 +120,7 @@ const updateReportStatus = async (reportId, newStatus) => {
 
     // Refresh reports from database
     const reportsResponse = await fetch(
-      "http://127.0.0.1:8000/api/reports"
+      "https://dhara-pulse-backend.onrender.com/api/reports"
     );
 
     const reportsData = await reportsResponse.json();
@@ -138,7 +142,7 @@ const updateReportStatus = async (reportId, newStatus) => {
   const fetchReports = async () => {
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/api/reports"
+        "https://dhara-pulse-backend.onrender.com/api/reports"
       );
 
       if (!response.ok) {
@@ -198,7 +202,7 @@ useEffect(() => {
       // 1. WEATHER / RAINFALL
       // =========================
       const weatherResponse = await fetch(
-        `http://127.0.0.1:8000/api/weather?lat=${selectedLocation.lat}&lon=${selectedLocation.lon}`
+        `https://dhara-pulse-backend.onrender.com/api/weather?lat=${selectedLocation.lat}&lon=${selectedLocation.lon}`
       );
 
       if (!weatherResponse.ok) {
@@ -216,7 +220,7 @@ useEffect(() => {
       // 2. SOIL MOISTURE
       // =========================
       const soilResponse = await fetch(
-        "http://127.0.0.1:8000/api/soil-moisture"
+        "https://dhara-pulse-backend.onrender.com/api/soil-moisture"
       );
 
       if (!soilResponse.ok) {
@@ -237,7 +241,7 @@ useEffect(() => {
       // =========================
 
       const soilHistoryResponse = await fetch(
-        "http://127.0.0.1:8000/api/soil-moisture/history"
+        "https://dhara-pulse-backend.onrender.com/api/soil-moisture/history"
       );
 
       if (!soilHistoryResponse.ok) {
@@ -267,7 +271,7 @@ useEffect(() => {
 
       // TERRAIN / SLOPE
       const terrainResponse = await fetch(
-        `http://127.0.0.1:8000/api/terrain?lat=${selectedLocation.lat}&lon=${selectedLocation.lon}`
+        `https://dhara-pulse-backend.onrender.com/api/terrain?lat=${selectedLocation.lat}&lon=${selectedLocation.lon}`
        );
 
       if (!terrainResponse.ok) {
@@ -280,7 +284,7 @@ useEffect(() => {
 
       // HISTORICAL LANDSLIDES
       const historicalResponse = await fetch(
-       `http://127.0.0.1:8000/api/gsi-historical-landslides/nearby?lat=${selectedLocation.lat}&lon=${selectedLocation.lon}&radius_km=50`
+       `https://dhara-pulse-backend.onrender.com/api/gsi-historical-landslides/nearby?lat=${selectedLocation.lat}&lon=${selectedLocation.lon}&radius_km=50`
     );
 
       if (!historicalResponse.ok) {
@@ -315,7 +319,7 @@ useEffect(() => {
      
 
       const riskResponse = await fetch(
-         `http://127.0.0.1:8000/api/risk?rainfall=${rainfall}&soil_moisture=${soilMoistureValue}&slope=${slope}&historical_events=${historicalEvents}&soil_trend=${soilTrend}`
+         `https://dhara-pulse-backend.onrender.com/api/risk?rainfall=${rainfall}&soil_moisture=${soilMoistureValue}&slope=${slope}&historical_events=${historicalEvents}&soil_trend=${soilTrend}`
       );
 
       if (!riskResponse.ok) {
@@ -339,7 +343,7 @@ useEffect(() => {
   try {
 
     const alertUrl =
-      `http://127.0.0.1:8000/api/alerts` +
+      `https://dhara-pulse-backend.onrender.com/api/alerts` +
       `?risk_level=${encodeURIComponent(riskData.level)}` +
       `&risk_score=${riskData.score}` +
       `&latitude=${selectedLocation.lat}` +
@@ -384,7 +388,7 @@ useEffect(() => {
   async function loadAlerts() {
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/api/alerts"
+        "https://dhara-pulse-backend.onrender.com/api/alerts"
       );
 
       if (!response.ok) {
@@ -1576,7 +1580,7 @@ useEffect(() => {
                 onClick={async () => {
                   try {
                     const response = await fetch(
-                       "http://127.0.0.1:8000/api/reports",
+                       "https://dhara-pulse-backend.onrender.com/api/reports",
                       {
                          method: "POST",
                          headers: {
@@ -1602,7 +1606,7 @@ useEffect(() => {
 
 // Refresh citizen reports from database
 const reportsResponse = await fetch(
-  "http://127.0.0.1:8000/api/reports"
+  "https://dhara-pulse-backend.onrender.com/api/reports"
 );
 
 const reportsData = await reportsResponse.json();
