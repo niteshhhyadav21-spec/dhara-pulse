@@ -486,17 +486,21 @@ def weather(
     # 2. REQUEST FRESH DATA
     # -----------------------------
     url = (
-        "https://api.open-meteo.com/v1/forecast"
-        f"?latitude={lat}"
-        f"&longitude={lon}"
-        "&current=temperature_2m,"
-        "relative_humidity_2m,"
-        "precipitation,"
-        "rain"
-        "&hourly=precipitation"
-        "&past_hours=24"
-        "&forecast_hours=1"
-        "&timezone=auto"
+    "https://api.open-meteo.com/v1/forecast"
+    f"?latitude={lat}"
+    f"&longitude={lon}"
+    "&current=temperature_2m,"
+    "relative_humidity_2m,"
+    "precipitation,"
+    "rain,"
+    "weather_code,"
+    "visibility,"
+    "wind_speed_10m,"
+    "wind_gusts_10m"
+    "&hourly=precipitation"
+    "&past_hours=24"
+    "&forecast_hours=1"
+    "&timezone=auto"
     )
 
     try:
@@ -526,11 +530,19 @@ def weather(
         result = {
             "latitude": lat,
             "longitude": lon,
+                    # Basic weather
             "temperature": current["temperature_2m"],
             "humidity": current["relative_humidity_2m"],
             "precipitation": current["precipitation"],
             "rain": current["rain"],
             "rainfall_24h": rainfall_24h,
+
+            # Weather event indicators
+            "weather_code": current["weather_code"],
+            "visibility": current["visibility"],
+            "wind_speed": current["wind_speed_10m"],
+            "wind_gusts": current["wind_gusts_10m"],
+
             "source": "Open-Meteo",
             "live": True,
             "cached": False

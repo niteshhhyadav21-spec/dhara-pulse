@@ -952,3 +952,345 @@ footer {
   height: 100%;
   font-family: Inter, Arial, sans-serif;
 }
+/* =========================================
+   WEATHER EVENT MONITORING
+========================================= */
+
+.weather-event-section {
+  background: #ffffff;
+  border: 1px solid #e7e8e3;
+  border-radius: 18px;
+  padding: 24px;
+  margin-bottom: 22px;
+}
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.section-heading h3 {
+  margin: 4px 0;
+  font-size: 22px;
+}
+
+.section-heading p {
+  margin: 0;
+  color: #7b817b;
+  font-size: 13px;
+}
+
+.live-badge {
+  background: #eaf5ed;
+  color: #648b70;
+  padding: 7px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.weather-event-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.weather-event-card {
+  border: 1px solid #e6e8e3;
+  background: #fafbf8;
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.weather-event-card:hover {
+  transform: translateY(-2px);
+  border-color: #8baa92;
+}
+
+.weather-event-card.selected {
+  background: #edf6ef;
+  border: 2px solid #7fa589;
+}
+
+.weather-event-icon {
+  font-size: 25px;
+}
+
+.weather-event-card strong {
+  display: block;
+  font-size: 14px;
+  color: #39463e;
+}
+
+.weather-event-card small {
+  display: block;
+  margin-top: 4px;
+  color: #8a908a;
+  font-size: 10px;
+}
+
+.selected-event-panel {
+  margin-top: 18px;
+  padding: 16px;
+  background: #f7f8f4;
+  border-radius: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.selected-event-panel > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.selected-event-icon {
+  font-size: 30px;
+}
+
+.selected-event-panel p {
+  margin: 0;
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  color: #8a918b;
+}
+
+.selected-event-panel h3 {
+  margin: 4px 0 0;
+  font-size: 20px;
+}
+
+.event-status {
+  background: #eaf5ed;
+  color: #668d72;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .weather-event-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .weather-event-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .selected-event-panel {
+    align-items: flex-start;
+    gap: 15px;
+    flex-direction: column;
+  }
+}
+/* ================================
+   WEATHER EVENT BUTTONS
+   ================================ */
+
+.weather-monitoring-inputs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.weather-event-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  min-height: 48px;
+  padding: 10px 12px;
+
+  background: #ffffff !important;
+  color: #263238 !important;
+
+  border: 1px solid #dfe6df !important;
+  border-radius: 10px;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  opacity: 1 !important;
+  visibility: visible !important;
+
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.weather-event-btn:hover {
+  background: #f1f7f1 !important;
+  border-color: #8caf91 !important;
+  transform: translateY(-1px);
+}
+
+.weather-event-btn.active {
+  background: #e8f3e9 !important;
+  border: 2px solid #7fa987 !important;
+  color: #315b3b !important;
+}
+
+.weather-event-icon {
+  font-size: 18px;
+  opacity: 1 !important;
+}
+
+.weather-event-name {
+  color: #263238 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+/* ==========================================
+   WEATHER EVENT CATEGORIES - VISIBILITY FIX
+   ========================================== */
+
+.weather-events-section {
+  width: 100%;
+  margin-top: 24px;
+}
+
+.weather-event-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.weather-event-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  min-height: 60px;
+  padding: 12px 14px;
+
+  background: #ffffff;
+  border: 1px solid #d9e2dc;
+  border-radius: 12px;
+
+  color: #26352d !important;
+  opacity: 1 !important;
+
+  cursor: pointer;
+  text-align: left;
+
+  transition: 0.2s ease;
+}
+
+.weather-event-card:hover {
+  border-color: #718d78;
+  background: #f5faf6;
+  transform: translateY(-1px);
+}
+
+.weather-event-card.selected {
+  background: #eaf4ec;
+  border: 2px solid #718d78;
+  color: #26352d !important;
+}
+
+.weather-event-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.weather-event-card strong,
+.weather-event-card span:not(.weather-event-icon),
+.weather-event-card small {
+  color: #26352d !important;
+  opacity: 1 !important;
+}
+
+.weather-event-card strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.weather-event-card small {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  color: #66756c !important;
+}
+
+/* Selected event information */
+
+.selected-event-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-top: 14px;
+  padding: 14px 16px;
+
+  background: #f5f9f6;
+  border: 1px solid #d9e2dc;
+  border-radius: 12px;
+
+  color: #26352d !important;
+}
+
+.selected-event-panel h3,
+.selected-event-panel p,
+.selected-event-panel div {
+  color: #26352d !important;
+  opacity: 1 !important;
+}
+
+.selected-event-icon {
+  font-size: 26px;
+}
+
+.event-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  color: #718d78 !important;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+
+  background: #718d78;
+  border-radius: 50%;
+}
+
+/* Laptop / smaller screens */
+
+@media (max-width: 900px) {
+  .weather-event-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .weather-event-grid {
+    grid-template-columns: 1fr;
+  }
+}

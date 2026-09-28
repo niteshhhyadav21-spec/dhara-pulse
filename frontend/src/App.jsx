@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import Login from "./Login.jsx";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "./App.css";
@@ -77,12 +78,119 @@ function getRiskWarning(level) {
       };
   }
 }
+
+
+const weatherEvents = [
+  {
+        id: 1,
+        event: "Rainfall",
+        city: "Indore",
+        state: "Madhya Pradesh",
+        description: "Heavy rainfall reported",
+        source: "Citizen Report",
+        verified: true,
+      },
+      {
+        id: 2,
+        event: "Thunderstorm",
+        city: "Guwahati",
+        state: "Assam",
+        description: "Thunderstorm activity reported",
+        source: "IMD",
+        verified: true,
+      },
+      {
+        id: 3,
+        event: "Flooding",
+        city: "Guwahati",
+        state: "Assam",
+        description: "Waterlogging reported in low-lying area",
+        source: "Citizen Report",
+        verified: false,
+      },
+      {
+        id: 4,
+        event: "Heatwave",
+        city: "Delhi",
+        state: "Delhi",
+        description: "High temperature conditions reported",
+        source: "Weather API",
+        verified: true,
+      },
+      {
+        id: 5,
+        event: "Fog",
+        city: "Amritsar",
+        state: "Punjab",
+        description: "Dense fog reported",
+        source: "Citizen Report",
+        verified: false,
+      },
+      {
+        id: 6,
+        event: "Dust Storm",
+        city: "Jaipur",
+        state: "Rajasthan",
+        description: "Dust storm reported",
+        source: "Weather API",
+        verified: true,
+      },
+      {
+        id: 7,
+        event: "Strong Wind",
+        city: "Mumbai",
+        state: "Maharashtra",
+        description: "Strong wind conditions reported",
+        source: "Citizen Report",
+        verified: false,
+      },
+    ];
+ const weatherEventCategories = [
+  {
+    name: "Rainfall",
+    icon: "🌧️",
+    description: "Rainfall intensity and accumulation",
+  },
+  {
+    name: "Thunderstorm",
+    icon: "⛈️",
+    description: "Thunderstorm activity and reports",
+  },
+  {
+    name: "Flooding",
+    icon: "🌊",
+    description: "Flood conditions and citizen reports",
+  },
+  {
+    name: "Heatwave",
+    icon: "🌡️",
+    description: "Extreme temperature conditions",
+  },
+  {
+    name: "Fog",
+    icon: "🌫️",
+    description: "Visibility and fog conditions",
+  },
+  {
+    name: "Dust Storm",
+    icon: "🌪️",
+    description: "Dust storm activity and reports",
+  },
+  {
+    name: "Strong Wind",
+    icon: "💨",
+    description: "High-speed wind conditions",
+  },
+];
 function App() {
+  
   const [activePage, setActivePage] = useState("Dashboard");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [language, setLanguage] = useState("English");
   const [showReport, setShowReport] = useState(false);
   const [risk, setRisk] = useState(null);
   const [weather, setWeather] = useState(null);
+  const [weatherEvents, setWeatherEvents] = useState([]);
   const [soilMoisture, setSoilMoisture] = useState(null);
   const [soilHistory, setSoilHistory] = useState([]);
   const [historicalEvents, setHistoricalEvents] = useState(0);
@@ -96,7 +204,11 @@ function App() {
   lat: 26.14,
   lon: 91.74
   });
+  const [selectedWeatherEvent, setSelectedWeatherEvent] = useState("Rainfall");
   const [reports, setReports] = useState([]);
+
+
+   
  // ==========================================
 // VERIFY / REJECT CITIZEN REPORT
 // ==========================================
@@ -168,7 +280,7 @@ const updateReportStatus = async (reportId, newStatus) => {
       title: "Rainfall",
       value: weather?.rainfall_24h ?? 0,
       unit: "mm / 24h",
-      status: "Live Weather"
+      status: weather ? "Live Weather" : "Waiting for data"
     },
     {
       icon: "💧",
@@ -215,6 +327,107 @@ useEffect(() => {
 
       console.log("LIVE WEATHER DATA:", weatherData);
 
+    // ================================
+    // CALCULATE LIVE WEATHER EVENTS
+    // ================================
+
+    const temperature = Number(weatherData.temperature ?? 0);
+    const rain = Number(weatherData.rain ?? 0);
+    const precipitation = Number(weatherData.precipitation ?? 0);
+    const windSpeed = Number(weatherData.wind_speed ?? 0);
+    const windGusts = Number(weatherData.wind_gusts ?? 0);
+    const visibility = Number(weatherData.visibility ?? 99999);
+    const weatherCode = Number(weatherData.weather_code ?? -1);
+    const rainfall24h = Number(weatherData.rainfall_24h ?? 0);
+
+    // WMO/Open-Meteo weather codes
+    const thunderstorm =
+      weatherCode >= 95 && weatherCode <= 99;
+
+    const fog =
+      (weatherCode >= 45 && weatherCode <= 48) ||
+      visibility < 1000;
+
+    const dustStorm =
+      weatherCode >= 30 && weatherCode <= 35;
+
+    const strongWind =
+      windSpeed >= 40 || windGusts >= 60;
+
+    const heatwave =
+      temperature >= 40;
+
+    const heavyRain =
+      rain >= 7.5 ||
+      precipitation >= 7.5 ||
+      rainfall24h >= 50;
+
+    const flooding =
+      rainfall24h >= 50 ||
+      precipitation >= 20;
+
+    const events = [
+      {
+        id: "rainfall",
+        name: "Rainfall",
+        value: rainfall24h,
+        unit: "mm / 24h",
+        active: heavyRain,
+        status: heavyRain ? "High" : "Normal"
+      },
+      {
+        id: "thunderstorm",
+        name: "Thunderstorm",
+        value: thunderstorm ? 1 : 0,
+        unit: thunderstorm ? "Detected" : "Not detected",
+        active: thunderstorm,
+        status: thunderstorm ? "Active" : "Clear"
+      },
+      {
+        id: "flooding",
+        name: "Flooding",
+        value: flooding ? 1 : 0,
+        unit: flooding ? "Risk detected" : "Low risk",
+        active: flooding,
+        status: flooding ? "High" : "Low"
+      },
+      {
+        id: "heatwave",
+        name: "Heatwave",
+        value: temperature,
+        unit: "°C",
+        active: heatwave,
+        status: heatwave ? "High" : "Normal"
+      },
+      {
+        id: "fog",
+        name: "Fog",
+        value: visibility,
+        unit: "m visibility",
+        active: fog,
+        status: fog ? "Detected" : "Clear"
+      },
+      {
+        id: "dust-storm",
+        name: "Dust Storm",
+        value: dustStorm ? 1 : 0,
+        unit: dustStorm ? "Detected" : "Not detected",
+        active: dustStorm,
+        status: dustStorm ? "Active" : "Clear"
+      },
+      {
+        id: "strong-wind",
+        name: "Strong Wind",
+        value: windGusts,
+        unit: "km/h gusts",
+        active: strongWind,
+        status: strongWind ? "High" : "Normal"
+      }
+    ];
+
+    setWeatherEvents(events);
+
+    console.log("LIVE WEATHER EVENTS:", events);
 
       // =========================
       // 2. SOIL MOISTURE
@@ -418,6 +631,8 @@ useEffect(() => {
     clearInterval(interval);
   };
 }, []);
+
+
   const menu = [
     ["Dashboard", "⌂"],
     ["Risk Map", "🗺️"],
@@ -426,7 +641,24 @@ useEffect(() => {
     ["Alerts", "🔔"],
     ["Authority Panel", "🏛️"],
   ];
+  if (!isLoggedIn) {
+    return (
+      <Login
+        onLogin={(userData) => {
+          // Save detected GPS location
+          if (userData?.locationCoordinates) {
+            setSelectedLocation({
+              lat: userData.locationCoordinates.lat,
+              lon: userData.locationCoordinates.lon,
+            });
+          }
 
+          // Open dashboard
+          setIsLoggedIn(true);
+        }}
+      />
+    );
+  }
   return (
     <div className="app">
 
@@ -1254,6 +1486,74 @@ useEffect(() => {
 
         </section>
 
+      {/* WEATHER EVENT CATEGORIES */}
+  <section className="weather-events-section">
+    <div className="section-label">
+      <span className="small-label">WEATHER MONITORING</span>
+      WEATHER EVENT CATEGORIES
+    </div>
+
+    <div className="weather-event-grid">
+
+    <button
+        className={`weather-event-card ${selectedWeatherEvent === "Rainfall" ? "active" : ""}`}
+        onClick={() => setSelectedWeatherEvent("Rainfall")}
+    >
+        <span className="weather-event-icon">🌧️</span>
+        <span>Rainfall</span>
+    </button>
+
+    <button
+        className={`weather-event-card ${selectedWeatherEvent === "Thunderstorm" ? "active" : ""}`}
+        onClick={() => setSelectedWeatherEvent("Thunderstorm")}
+    >
+        <span className="weather-event-icon">⛈️</span>
+        <span>Thunderstorm</span>
+    </button>
+
+    <button
+        className={`weather-event-card ${selectedWeatherEvent === "Flooding" ? "active" : ""}`}
+        onClick={() => setSelectedWeatherEvent("Flooding")}
+    >
+        <span className="weather-event-icon">🌊</span>
+        <span>Flooding</span>
+    </button>
+
+    <button
+        className={`weather-event-card ${selectedWeatherEvent === "Heatwave" ? "active" : ""}`}
+        onClick={() => setSelectedWeatherEvent("Heatwave")}
+    >
+        <span className="weather-event-icon">🌡️</span>
+        <span>Heatwave</span>
+    </button>
+
+    <button
+        className={`weather-event-card ${selectedWeatherEvent === "Fog" ? "active" : ""}`}
+        onClick={() => setSelectedWeatherEvent("Fog")}
+    >
+        <span className="weather-event-icon">🌫️</span>
+        <span>Fog</span>
+    </button>
+
+    <button
+        className={`weather-event-card ${selectedWeatherEvent === "Dust Storm" ? "active" : ""}`}
+        onClick={() => setSelectedWeatherEvent("Dust Storm")}
+    >
+        <span className="weather-event-icon">🌪️</span>
+        <span>Dust Storm</span>
+    </button>
+
+    <button
+        className={`weather-event-card ${selectedWeatherEvent === "Strong Wind" ? "active" : ""}`}
+        onClick={() => setSelectedWeatherEvent("Strong Wind")}
+    >
+        <span className="weather-event-icon">💨</span>
+        <span>Strong Wind</span>
+    </button>
+
+</div>
+  </section>
+
         {/* ENVIRONMENT */}
         <section>
 
@@ -1667,6 +1967,7 @@ function Source({ icon, title, text }) {
 
 function RiskMap({ onLocationSelect, gsiLandslides, risk,selectedLocation, reports }) {
 
+  const [selectedWeatherEvent, setSelectedWeatherEvent] = useState(null);
   const mapRef = useRef(null);
   const landslideLayerRef = useRef(null);
   const selectedMarkerRef = useRef(null);
@@ -1678,104 +1979,185 @@ function RiskMap({ onLocationSelect, gsiLandslides, risk,selectedLocation, repor
   // ==========================================
 
   useEffect(() => {
-
     if (mapRef.current) return;
 
     const map = L
       .map("dhara-map")
       .setView([25.5, 91.5], 6);
 
-    // OpenStreetMap
     L.tileLayer(
       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       {
-        attribution:
-          "&copy; OpenStreetMap contributors",
+        attribution: "&copy; OpenStreetMap contributors",
       }
     ).addTo(map);
 
-
-    // ==========================================
-    // MAP CLICK
-    // ==========================================
-
     map.on("click", (event) => {
-
       const { lat, lng } = event.latlng;
 
-      console.log(
-        "SELECTED LOCATION:",
-        lat,
-        lng
-      );
+      console.log("SELECTED LOCATION:", lat, lng);
 
-
-      // Remove previous selected pointer
       if (selectedMarkerRef.current) {
         selectedMarkerRef.current.remove();
       }
 
-
-      // Create new selected-location pointer
       const marker = L.marker([lat, lng])
-  .addTo(map)
-  .bindPopup(`
-    <div style="min-width: 200px; font-family: Arial, sans-serif;">
-      <strong style="font-size: 15px;">
-        Dhara Pulse
-      </strong>
+        .addTo(map)
+        .bindPopup(`
+          <strong>Dhara Pulse</strong><br><br>
+          Selected Location<br>
+          Latitude: ${lat.toFixed(5)}<br>
+          Longitude: ${lng.toFixed(5)}
+        `)
+        .openPopup();
 
-      <hr style="margin: 8px 0;">
-
-      <strong>Selected Location</strong><br><br>
-
-      Latitude: ${lat.toFixed(5)}<br>
-      Longitude: ${lng.toFixed(5)}<br><br>
-
-      <span style="color: #666;">
-        ⏳ Calculating live risk...
-      </span>
-    </div>
-  `)
-  .openPopup();
-
-
-      // Save marker reference
       selectedMarkerRef.current = marker;
 
-
-      // Send coordinates to App
       onLocationSelect({
-        lat,
+        lat: lat,
         lon: lng
       });
-
     });
 
-
-
-    // Save map reference
     mapRef.current = map;
 
-
-    // ==========================================
-    // CLEANUP
-    // ==========================================
-
     return () => {
-
       if (selectedMarkerRef.current) {
         selectedMarkerRef.current.remove();
         selectedMarkerRef.current = null;
       }
 
       map.remove();
-
       mapRef.current = null;
-
     };
 
   }, [onLocationSelect]);
+
+  {/* WEATHER EVENT MONITORING */}
+<section className="weather-event-section">
+
+  <div className="section-heading">
+    <div>
+      <p className="eyebrow">NATIONAL WEATHER MONITORING</p>
+      <h3>Weather Event Monitoring</h3>
+      <p>
+        Select an event to analyse live reports and weather conditions.
+      </p>
+    </div>
+
+    <span className="live-badge">
+      ● LIVE
+    </span>
+  </div>
+
+  <div className="weather-event-grid">
+
+    {weatherEvents.map((event) => (
+      <button
+        key={event.name}
+        className={
+          selectedWeatherEvent === event.name
+            ? "weather-event-card selected"
+            : "weather-event-card"
+        }
+        onClick={() => setSelectedWeatherEvent(event.name)}
+      >
+
+        <span className="weather-event-icon">
+          {event.icon}
+        </span>
+
+        <div>
+          <strong>{event.name}</strong>
+
+          <small>
+            {event.description}
+          </small>
+        </div>
+
+      </button>
+    ))}
+
+  </div>
+
+  <div className="selected-event-panel">
+
+    <div>
+      <span className="selected-event-icon">
+        {
+          weatherEvents.find(
+            event => event.name === selectedWeatherEvent
+          )?.icon
+        }
+      </span>
+
+      <div>
+        <p>SELECTED WEATHER EVENT</p>
+
+        <h3>
+          {selectedWeatherEvent}
+        </h3>
+      </div>
+    </div>
+
+    <div className="event-status">
+      <span className="live-dot"></span>
+      Monitoring
+    </div>
+
+  </div>
+
+</section>
+
+// ==========================================
+// SHOW USER'S DETECTED LOCATION
+// ==========================================
+useEffect(() => {
+
+  if (!mapRef.current || !selectedLocation) {
+    return;
+  }
+
+  const map = mapRef.current;
+
+  const { lat, lon } = selectedLocation;
+
+  // Remove previous marker
+  if (selectedMarkerRef.current) {
+    selectedMarkerRef.current.remove();
+  }
+
+  // Create new marker
+  const marker = L.marker([lat, lon])
+    .addTo(map)
+    .bindPopup(`
+      <div style="
+        min-width: 220px;
+        font-family: Arial, sans-serif;
+      ">
+        <strong style="font-size:16px;">
+          📍 Your Location
+        </strong>
+
+        <hr style="margin:8px 0;">
+
+        Latitude: ${lat.toFixed(5)}<br>
+        Longitude: ${lon.toFixed(5)}<br><br>
+
+        <span style="color:#718d78;">
+          Live weather and risk are being calculated
+          for this location.
+        </span>
+      </div>
+    `);
+
+  selectedMarkerRef.current = marker;
+
+  // Move map to user
+  map.setView([lat, lon], 13);
+
+}, [selectedLocation]);
+
 
 // ==========================================
 // 2. UPDATE SELECTED LOCATION WITH LIVE RISK
