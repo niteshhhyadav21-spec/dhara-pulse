@@ -530,19 +530,15 @@ def weather(
         result = {
             "latitude": lat,
             "longitude": lon,
-                    # Basic weather
             "temperature": current["temperature_2m"],
             "humidity": current["relative_humidity_2m"],
             "precipitation": current["precipitation"],
             "rain": current["rain"],
-            "rainfall_24h": rainfall_24h,
-
-            # Weather event indicators
             "weather_code": current["weather_code"],
             "visibility": current["visibility"],
             "wind_speed": current["wind_speed_10m"],
             "wind_gusts": current["wind_gusts_10m"],
-
+            "rainfall_24h": rainfall_24h,
             "source": "Open-Meteo",
             "live": True,
             "cached": False

@@ -326,6 +326,13 @@ useEffect(() => {
       setWeather(weatherData);
 
       console.log("LIVE WEATHER DATA:", weatherData);
+      
+      console.log("🌩️ THUNDERSTORM WEATHER CODE:", weatherData?.weather_code);
+      console.log(
+        "🌩️ THUNDERSTORM DETECTED:",
+        Number(weatherData?.weather_code ?? -1) >= 95 &&
+        Number(weatherData?.weather_code ?? -1) <= 99
+      ); 
 
     // ================================
     // CALCULATE LIVE WEATHER EVENTS
@@ -370,54 +377,69 @@ useEffect(() => {
       {
         id: "rainfall",
         name: "Rainfall",
+        icon: "🌧️",
         value: rainfall24h,
         unit: "mm / 24h",
         active: heavyRain,
         status: heavyRain ? "High" : "Normal"
       },
+
       {
         id: "thunderstorm",
         name: "Thunderstorm",
-        value: thunderstorm ? 1 : 0,
+        icon: "⛈️",
+        value: thunderstorm
+          ? `Detected (code ${weatherCode})`
+          : `Clear (code ${weatherCode})`,
         unit: thunderstorm ? "Detected" : "Not detected",
         active: thunderstorm,
         status: thunderstorm ? "Active" : "Clear"
       },
+
       {
         id: "flooding",
         name: "Flooding",
+        icon: "🌊",
         value: flooding ? 1 : 0,
         unit: flooding ? "Risk detected" : "Low risk",
         active: flooding,
         status: flooding ? "High" : "Low"
       },
+
       {
         id: "heatwave",
         name: "Heatwave",
+        icon: "🌡️",
         value: temperature,
         unit: "°C",
         active: heatwave,
         status: heatwave ? "High" : "Normal"
       },
+
       {
         id: "fog",
         name: "Fog",
+        icon: "🌫️",
         value: visibility,
         unit: "m visibility",
         active: fog,
         status: fog ? "Detected" : "Clear"
       },
+
       {
         id: "dust-storm",
         name: "Dust Storm",
+        icon: "🌪️",
         value: dustStorm ? 1 : 0,
         unit: dustStorm ? "Detected" : "Not detected",
         active: dustStorm,
         status: dustStorm ? "Active" : "Clear"
       },
+
       {
         id: "strong-wind",
         name: "Strong Wind",
+        icon: "💨",
         value: windGusts,
         unit: "km/h gusts",
         active: strongWind,
@@ -1364,13 +1386,7 @@ useEffect(() => {
             </div>
 
             {/* RISK CONTRIBUTION BREAKDOWN */}
-            <div
-              style={{
-                marginTop: "20px",
-                paddingTop: "18px",
-                borderTop: "1px solid rgba(255,255,255,0.08)"
-            }}
-            >
+           <div className="risk-contribution">
 
               <span className="small-label">
                 RISK CONTRIBUTION
@@ -1389,11 +1405,7 @@ useEffect(() => {
                   </span>
                 </div>
 
-                <div style={{
-                   display: "flex",
-                   justifyContent: "space-between",
-                   marginBottom: "8px"
-                }}>
+                <div className="risk-contribution-row">
                   <span>💧Soil Moisture</span>
                   <strong>
                       {risk?.factor_scores?.soil_moisture ?? "--"} / 25
@@ -1486,73 +1498,134 @@ useEffect(() => {
 
         </section>
 
-      {/* WEATHER EVENT CATEGORIES */}
-  <section className="weather-events-section">
-    <div className="section-label">
-      <span className="small-label">WEATHER MONITORING</span>
-      WEATHER EVENT CATEGORIES
-    </div>
+     {/* WEATHER EVENT MONITORING */}
+        <section className="weather-event-section">
 
-    <div className="weather-event-grid">
+          <div className="section-heading">
 
-    <button
-        className={`weather-event-card ${selectedWeatherEvent === "Rainfall" ? "active" : ""}`}
-        onClick={() => setSelectedWeatherEvent("Rainfall")}
-    >
-        <span className="weather-event-icon">🌧️</span>
-        <span>Rainfall</span>
-    </button>
+            <div>
+              <p className="eyebrow">
+                NATIONAL WEATHER MONITORING
+              </p>
 
-    <button
-        className={`weather-event-card ${selectedWeatherEvent === "Thunderstorm" ? "active" : ""}`}
-        onClick={() => setSelectedWeatherEvent("Thunderstorm")}
-    >
-        <span className="weather-event-icon">⛈️</span>
-        <span>Thunderstorm</span>
-    </button>
+              <h3>
+                Weather Event Monitoring
+              </h3>
 
-    <button
-        className={`weather-event-card ${selectedWeatherEvent === "Flooding" ? "active" : ""}`}
-        onClick={() => setSelectedWeatherEvent("Flooding")}
-    >
-        <span className="weather-event-icon">🌊</span>
-        <span>Flooding</span>
-    </button>
+              <p>
+                Live environmental conditions across the selected location.
+              </p>
+            </div>
 
-    <button
-        className={`weather-event-card ${selectedWeatherEvent === "Heatwave" ? "active" : ""}`}
-        onClick={() => setSelectedWeatherEvent("Heatwave")}
-    >
-        <span className="weather-event-icon">🌡️</span>
-        <span>Heatwave</span>
-    </button>
+            <span className="live-badge">
+              ● LIVE
+            </span>
 
-    <button
-        className={`weather-event-card ${selectedWeatherEvent === "Fog" ? "active" : ""}`}
-        onClick={() => setSelectedWeatherEvent("Fog")}
-    >
-        <span className="weather-event-icon">🌫️</span>
-        <span>Fog</span>
-    </button>
+          </div>
 
-    <button
-        className={`weather-event-card ${selectedWeatherEvent === "Dust Storm" ? "active" : ""}`}
-        onClick={() => setSelectedWeatherEvent("Dust Storm")}
-    >
-        <span className="weather-event-icon">🌪️</span>
-        <span>Dust Storm</span>
-    </button>
 
-    <button
-        className={`weather-event-card ${selectedWeatherEvent === "Strong Wind" ? "active" : ""}`}
-        onClick={() => setSelectedWeatherEvent("Strong Wind")}
-    >
-        <span className="weather-event-icon">💨</span>
-        <span>Strong Wind</span>
-    </button>
+          <div className="weather-event-grid">
 
-</div>
-  </section>
+            {weatherEvents.map((event) => (
+
+              <button
+                key={event.name}
+                className={
+                  selectedWeatherEvent === event.name
+                    ? "weather-event-card selected"
+                    : "weather-event-card"
+                }
+                onClick={() => setSelectedWeatherEvent(event.name)}
+              >
+
+                <span className="weather-event-icon">
+                  {event.icon}
+                </span>
+                
+
+                <div className="weather-event-info">
+                  <strong>{event.name}</strong>
+
+                  <span className="weather-event-value">
+                      {event.id === "fog"
+                        ? `${(Number(event.value) / 1000).toFixed(1)} km`
+                        : event.id === "rainfall"
+                        ? `${Number(event.value).toFixed(1)} mm`
+                        : event.id === "heatwave"
+                        ? `${Number(event.value).toFixed(1)} °C`
+                        : event.id === "strong-wind"
+                        ? `${Number(event.value).toFixed(1)} km/h`
+                        : event.id === "thunderstorm"
+                        ? (event.active ? "Detected" : "Clear")
+                        : event.id === "flooding"
+                        ? (event.active ? "Risk detected" : "Low risk")
+                        : event.id === "dust-storm"
+                        ? (event.active ? "Detected" : "Not detected")
+                        : event.value}
+                    </span>
+
+                    <small>
+                      {event.unit}
+                    </small>
+
+                    <span
+                      className={
+                        event.active
+                          ? "weather-event-status active"
+                          : "weather-event-status normal"
+                      }
+                    >
+                      ● {event.status}
+                    </span>
+
+                </div>
+
+              </button>
+
+            ))}
+
+          </div>
+
+
+          <div className="selected-event-panel">
+
+            <div>
+
+              <span className="selected-event-icon">
+                {
+                  weatherEvents.find(
+                    event => event.name === selectedWeatherEvent
+                  )?.icon
+                }
+              </span>
+
+              <div>
+
+                <p>
+                  SELECTED WEATHER EVENT
+                </p>
+
+                <h3>
+                  {selectedWeatherEvent}
+                </h3>
+
+              </div>
+
+            </div>
+
+
+            <div className="event-status">
+
+              <span className="live-dot"></span>
+
+              Monitoring
+
+            </div>
+
+          </div>
+
+        </section>
+  
 
         {/* ENVIRONMENT */}
         <section>
@@ -2067,12 +2140,38 @@ function RiskMap({ onLocationSelect, gsiLandslides, risk,selectedLocation, repor
           {event.icon}
         </span>
 
-        <div>
+                <div className="weather-event-info">
           <strong>{event.name}</strong>
 
-          <small>
-            {event.description}
-          </small>
+          <span className="weather-event-value">
+            {event.id === "fog"
+              ? `${(Number(event.value) / 1000).toFixed(1)} km`
+              : event.id === "rainfall"
+              ? `${Number(event.value).toFixed(1)} mm`
+              : event.id === "heatwave"
+              ? `${Number(event.value).toFixed(1)} °C`
+              : event.id === "strong-wind"
+              ? `${Number(event.value).toFixed(1)} km/h`
+              : event.id === "thunderstorm"
+              ? (event.active ? "Detected" : "Clear")
+              : event.id === "flooding"
+              ? (event.active ? "Risk detected" : "Low risk")
+              : event.id === "dust-storm"
+              ? (event.active ? "Detected" : "Not detected")
+              : event.value}
+          </span>
+
+          <small>{event.unit}</small>
+
+          <span
+            className={
+              event.active
+                ? "weather-event-status active"
+                : "weather-event-status normal"
+            }
+          >
+            ● {event.status}
+          </span>
         </div>
 
       </button>
