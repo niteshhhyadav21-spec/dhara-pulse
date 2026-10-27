@@ -53,6 +53,7 @@ def test_weather_caching_and_availability(monkeypatch):
 
 def test_weather_rate_limit_429(monkeypatch):
     weather_cache.clear()
+    monkeypatch.setattr("main.rate_limit_until", 0.0)
 
     class Mock429Response:
         status_code = 429
@@ -66,6 +67,27 @@ def test_weather_rate_limit_429(monkeypatch):
 
     # Request encountering 429 without cache should return unavailable with rate limit message
     response = client.get("/api/weather?lat=27.00&lon=92.00")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["available"] is False
+    assert "Rate limited" in data["source"]
+
+def test_weather_rate_limit_fallback_cooldown(monkeypatch):
+    """When Retry-After header is missing on 429, fallback cooldown (180s) should apply."""
+    weather_cache.clear()
+    monkeypatch.setattr("main.rate_limit_until", 0.0)
+
+    class Mock429NoHeader:
+        status_code = 429
+        headers = {}
+        def json(self):
+            return {}
+        def raise_for_status(self):
+            pass
+
+    monkeypatch.setattr("main.http_session.get", lambda url, timeout: Mock429NoHeader())
+
+    response = client.get("/api/weather?lat=28.00&lon=93.00")
     assert response.status_code == 200
     data = response.json()
     assert data["available"] is False
