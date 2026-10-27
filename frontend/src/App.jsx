@@ -189,6 +189,7 @@ function App() {
   const [language, setLanguage] = useState("English");
   const [showReport, setShowReport] = useState(false);
   const [risk, setRisk] = useState(null);
+  const [riskStale, setRiskStale] = useState(false);
   const [weather, setWeather] = useState(null);
   const [weatherEvents, setWeatherEvents] = useState([]);
   const [soilMoisture, setSoilMoisture] = useState(null);
@@ -278,21 +279,21 @@ const updateReportStatus = async (reportId, newStatus) => {
     {
       icon: "🌧️",
       title: "Rainfall",
-      value: weather?.rainfall_24h ?? 0,
+      value: weather?.available ? weather.rainfall_24h : "--",
       unit: "mm / 24h",
-      status: weather ? "Live Weather" : "Waiting for data"
+      status: weather?.available ? "Live Weather" : (weather?.source || "Waiting for data")
     },
     {
       icon: "💧",
       title: "Soil Moisture",
-      value: soilMoisture?.soil_moisture ?? 0,
+      value: soilMoisture?.soil_moisture ?? "--",
       unit: "%",
-      status: "Sensor Network"
+      status: soilMoisture?.simulated ? "Simulated (prototype)" : "Sensor Network"
     },
     {
       icon: "🏔️",
       title: "Slope",
-      value:risk?.factors?.slope ?? 0,
+      value: risk?.factors?.slope ?? "--",
       unit: "°",
       status: "Live Terrain Data"
     },
@@ -324,6 +325,11 @@ useEffect(() => {
       const weatherData = await weatherResponse.json();
 
       setWeather(weatherData);
+
+      if (!weatherData.available) {
+        console.warn("Weather data unavailable:", weatherData.source);
+        return;
+      }
 
       console.log("LIVE WEATHER DATA:", weatherData);
       
@@ -527,10 +533,10 @@ useEffect(() => {
   }
 
        const historicalData = await historicalResponse.json();
+       const historicalEvents = Number(historicalData.historical_events ?? 0);
+          setHistoricalEvents(historicalEvents)
 
-       const historicalEvents = historicalData.historical_events; 
-
-       setHistoricalEvents(historicalEvents);
+       
        setGsiLandslides(historicalData.landslides || []);
        console.log(
         "GSI HISTORICAL EVENTS:",
@@ -553,49 +559,68 @@ useEffect(() => {
       const slope = terrainData.slope;
      
 
-      const riskResponse = await fetch(
-         `https://dhara-pulse-backend.onrender.com/api/risk?rainfall=${rainfall}&soil_moisture=${soilMoistureValue}&slope=${slope}&historical_events=${historicalEvents}&soil_trend=${soilTrend}`
-      );
+      // Risk calculation runs in its own failure domain so that a
+      // failed risk request never aborts the rest of the refresh cycle
+      // and never leaves the previous risk estimate on screen as if it
+      // were current.
+      let riskData = null;
+      let riskFailed = false;
 
-      if (!riskResponse.ok) {
-        throw new Error("Risk API failed");
+      try {
+        const riskResponse = await fetch(
+           `https://dhara-pulse-backend.onrender.com/api/risk?rainfall=${rainfall}&soil_moisture=${soilMoistureValue}&slope=${slope}&historical_events=${historicalEvents}&soil_trend=${soilTrend}`
+        );
+
+        if (!riskResponse.ok) {
+          throw new Error("Risk API failed");
+        }
+
+        riskData = await riskResponse.json();
+      } catch (error) {
+        console.error("RISK CALCULATION FAILED:", error);
+        riskFailed = true;
       }
 
-      const riskData = await riskResponse.json();
+      if (riskFailed) {
+        // Preserve the last known value but mark it stale. Do not
+        // invent a score or fall back to defaults here.
+        setRiskStale(true);
+        console.log("RISK STALE: using last known risk estimate");
+      } else if (riskData) {
+        setRisk(riskData);
+        setRiskStale(false);
+        console.log("LIVE RISK DATA:", riskData);
 
-      setRisk(riskData);
-
-      console.log("LIVE RISK DATA:", riskData);
-
-
-      if (
-  riskData.level !== previousRiskLevel.current &&
+        // Alerts are only compared against a freshly calculated risk.
+        if (
+          riskData.level !== previousRiskLevel.current &&
           (
-    riskData.level === "HIGH" ||
-    riskData.level === "CRITICAL"
-  )
-) {
-  try {
+            riskData.level === "HIGH" ||
+            riskData.level === "CRITICAL"
+          )
+        ) {
+          try {
 
-    const alertUrl =
-      `https://dhara-pulse-backend.onrender.com/api/alerts` +
-      `?risk_level=${encodeURIComponent(riskData.level)}` +
-      `&risk_score=${riskData.score}` +
-      `&latitude=${selectedLocation.lat}` +
-      `&longitude=${selectedLocation.lon}` +
-      `&message=${encodeURIComponent(riskData.explanation || "")}`;
+            const alertUrl =
+              `https://dhara-pulse-backend.onrender.com/api/alerts` +
+              `?risk_level=${encodeURIComponent(riskData.level)}` +
+              `&risk_score=${riskData.score}` +
+              `&latitude=${selectedLocation.lat}` +
+              `&longitude=${selectedLocation.lon}` +
+              `&message=${encodeURIComponent(riskData.explanation || "")}`;
 
-    await fetch(alertUrl, {
-      method: "POST"
-    });
+            await fetch(alertUrl, {
+              method: "POST"
+            });
 
-    console.log("🚨 ALERT SAVED:", riskData.level);
-  } catch (error) {
-    console.error("ALERT SAVE ERROR:", error);
-  }
-}
+            console.log("🚨 ALERT SAVED:", riskData.level);
+          } catch (error) {
+            console.error("ALERT SAVE ERROR:", error);
+          }
+        }
 
-previousRiskLevel.current = riskData.level;
+        previousRiskLevel.current = riskData.level;
+      }
     } catch (error) {
 
       console.error("LIVE DATA ERROR:", error);
@@ -608,8 +633,8 @@ previousRiskLevel.current = riskData.level;
   loadLiveData();
 
 
-  // Refresh every 30 seconds
-  const interval = setInterval(loadLiveData, 30000);
+  // Refresh every 5 minutes (300 seconds) to respect Open-Meteo rate limits
+  const interval = setInterval(loadLiveData, 300000);
 
 
   // Cleanup timer
@@ -1266,23 +1291,13 @@ useEffect(() => {
   </div>
 
   <div className="alert-content">
-
-    <span>
-      SYSTEM RISK ESTIMATE • NOT AN OFFICIAL ALERT
-    </span>
-
-    <strong>
-      {getRiskWarning(risk?.level).title}
-    </strong>
-
-    <small>
-      {getRiskWarning(risk?.level).message}
-    </small>
-
+    <span>SYSTEM RISK ESTIMATE • NOT AN OFFICIAL ALERT</span>
+    <strong>{getRiskWarning(risk?.level).title}</strong>
+    <small>{getRiskWarning(risk?.level).message}</small>
   </div>
 
   <span className="alert-status">
-    {risk ? risk.level : "CALCULATING"}
+    {riskStale ? "STALE — LAST KNOWN" : risk ? risk.level : "CALCULATING"}
   </span>
 
 </section>
@@ -1300,12 +1315,12 @@ useEffect(() => {
                 </span>
 
                 <h3>
-                  Current Risk Assessment
+                  Predicted Risk Assessment
                 </h3>
               </div>
 
-              <span className="demo-tag">
-                LIVE
+              <span className="demo-tag" style={riskStale ? { background: "#7a7268" } : undefined}>
+                {riskStale ? "STALE" : "LIVE"}
               </span>
 
             </div>
@@ -1436,26 +1451,9 @@ useEffect(() => {
               </div>
             </div>
           {/* RISK EXPLANATION */}
-        <div
-          style={{
-            marginTop: "18px",
-            padding: "14px",
-            borderRadius: "10px",
-            background: "rgba(255,255,255,0.04)"
-       
-          }}
-       >
-
-          <span className="small-label">
-             WHY THIS RISK?
-          </span>
-         
-         
-          <p style={{ marginTop: "8px", lineHeight: "1.5" }}>
-              {risk?.explanation ??
-                  "Risk explanation will appear when live data is available."}
-          </p>
-
+        <div className="risk-explanation">
+          <span className="small-label">WHY THIS RISK?</span>
+          <p>{risk?.explanation ?? "Risk explanation will appear when live data is available."}</p>
         </div>
 
 
@@ -1463,6 +1461,13 @@ useEffect(() => {
              Prototype risk estimate. Model calibration
              requires validated historical and sensor data.
         </p>
+
+        {riskStale && (
+          <p className="disclaimer" style={{ color: "#b9a08a", marginTop: "6px" }}>
+            ⚠️ Risk estimate is stale — last known value. Live
+            risk calculation failed this refresh cycle.
+          </p>
+        )}
       </div>
 
           {/* MAP */}
@@ -1848,40 +1853,23 @@ useEffect(() => {
 
         {/* EMERGENCY */}
         <section className="emergency-section">
-
           <div>
-
-            <span className="small-label">
-              SAFETY & PREPAREDNESS
-            </span>
-
-            <h3>
-              Emergency Readiness
-            </h3>
-
-            <p>
-              Keep essential information available
-              even during low connectivity.
-            </p>
-
+            <span className="small-label">SAFETY & PREPAREDNESS</span>
+            <h3>Emergency Readiness</h3>
+            <p>Keep essential information available even during low connectivity.</p>
           </div>
 
           <div className="emergency-actions">
-
-            <button>
-              📋 Safety Checklist
+            <button onClick={() => alert("Personal guardian details: Not yet configured. Store contact names and numbers in browser storage.")}>
+              📋 My Guardian
             </button>
-
-            <button>
-              📞 Emergency Contacts
-            </button>
-
-            <button>
-              📴 Offline Mode
-            </button>
-
+            <a href="tel:112" className="emergency-link">
+              📞 Emergency (112)
+            </a>
+            <a href="https://ndma.gov.in" target="_blank" rel="noreferrer" className="emergency-link">
+              🌐 NDMA Portal
+            </a>
           </div>
-
         </section>
 
         <footer>
